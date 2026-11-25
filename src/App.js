@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://127.0.0.1:8000';
+const API_BASE = 'https://water-backend-8md7.onrender.com';
 function App() {
   const [readings, setReadings] = useState([]);
   const [isAlertActive, setIsAlertActive] = useState(false);
