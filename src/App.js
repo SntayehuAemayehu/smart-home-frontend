@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://smart-home-backend-a4nk.onrender.com';
 
 function App() {
   const [devices, setDevices] = useState([]);
