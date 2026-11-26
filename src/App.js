@@ -1,73 +1,64 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
+const API_BASE = 'http://127.0.0.1:8000';
+
 function App() {
-  const [vitals, setVitals] = useState([]);
-  const [isAlarmActive, setIsAlarmActive] = useState(false);
+  const [devices, setDevices] = useState([]);
+
+  const fetchDevices = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/home/devices/`);
+      setDevices(res.data);
+    } catch (error) {
+      console.error("Error fetching devices:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchVitals = async () => {
-      try {
-        // Points to LIVE Render Backend
-        const response = await axios.get('https://health-backend-v2.onrender.com/api/vitals/');
-        setVitals(response.data);
-        
-        if (response.data.length > 0 && response.data[0].heartRate > 100) {
-          setIsAlarmActive(true);
-        }
-      } catch (error) {
-        console.error("Error fetching vitals:", error);
-      }
-    };
-
-    const interval = setInterval(fetchVitals, 2000);
+    fetchDevices();
+    const interval = setInterval(fetchDevices, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  const resetAlarm = async () => {
+  const toggle = async (deviceId, currentStatus) => {
+    const action = currentStatus ? 'OFF' : 'ON';
     try {
-      await axios.post('https://health-backend-v2.onrender.com/api/reset-alarm/');
-      setIsAlarmActive(false);
+      await axios.post(`${API_BASE}/api/home/toggle/`, {
+        device_id: deviceId,
+        action: action
+      });
+      fetchDevices();
     } catch (error) {
-      console.error("Error resetting alarm:", error);
+      console.error("Error toggling device:", error);
     }
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>🏥 Smart Health Monitor</h1>
+    <div style={{ padding: 20, fontFamily: 'Arial' }}>
+      <h1>🇪🇹 Ethiopian Smart Home</h1>
+      <p style={{ color: '#666' }}>Voice & Gesture Controlled (Simulated)</p>
       
-      {isAlarmActive && (
-        <div style={{ backgroundColor: 'red', color: 'white', padding: '10px', marginBottom: '20px', borderRadius: '5px' }}>
-          🚨 CRITICAL: High Heart Rate Detected! Hardware Alarm is ON.
-          <button onClick={resetAlarm} style={{ marginLeft: '20px', padding: '5px 10px', cursor: 'pointer' }}>
-            Reset Alarm (Send Command to Hardware)
-          </button>
-        </div>
-      )}
-
-      <h2>Live Vitals (From Hardware)</h2>
-      <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse' }}>
-        <thead style={{ backgroundColor: '#f2f2f2' }}>
-          <tr>
-            <th>Time</th>
-            <th>Heart Rate (BPM)</th>
-            <th>Temperature (°C)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vitals.map((v, index) => (
-            <tr key={index} style={{ backgroundColor: v.heartRate > 100 ? '#ffcccc' : 'white' }}>
-              <td>{new Date(v.time).toLocaleTimeString()}</td>
-              <td>{v.heartRate}</td>
-              <td>{v.temperature}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
+        {devices.map(d => (
+          <div key={d.id} style={{
+            border: '1px solid #ccc', padding: 20, borderRadius: 8, minWidth: '200px',
+            background: d.status ? '#e8f5e9' : '#fafafa'
+          }}>
+            <h3>{d.name}</h3>
+            <p>Status: <strong>{d.status ? 'ON' : 'OFF'}</strong></p>
+            <button 
+              onClick={() => toggle(d.id, d.status)}
+              style={{ padding: '8px 16px', cursor: 'pointer', width: '100%' }}
+            >
+              Turn {d.status ? 'OFF' : 'ON'}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
-
 export default App;
