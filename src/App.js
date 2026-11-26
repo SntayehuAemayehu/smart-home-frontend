@@ -6,14 +6,13 @@ function App() {
   const [vitals, setVitals] = useState([]);
   const [isAlarmActive, setIsAlarmActive] = useState(false);
 
-  // Fetch data from Django every 2 seconds
   useEffect(() => {
     const fetchVitals = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/vitals/');
+        // Points to LIVE Render Backend
+        const response = await axios.get('https://health-backend-v2.onrender.com/api/vitals/');
         setVitals(response.data);
         
-        // Check if the latest reading is critical
         if (response.data.length > 0 && response.data[0].heartRate > 100) {
           setIsAlarmActive(true);
         }
@@ -27,8 +26,12 @@ function App() {
   }, []);
 
   const resetAlarm = async () => {
-    await axios.post('http://localhost:8000/api/reset-alarm/');
-    setIsAlarmActive(false);
+    try {
+      await axios.post('https://health-backend-v2.onrender.com/api/reset-alarm/');
+      setIsAlarmActive(false);
+    } catch (error) {
+      console.error("Error resetting alarm:", error);
+    }
   };
 
   return (
@@ -36,15 +39,17 @@ function App() {
       <h1>🏥 Smart Health Monitor</h1>
       
       {isAlarmActive && (
-        <div style={{ backgroundColor: 'red', color: 'white', padding: '10px', marginBottom: '20px' }}>
+        <div style={{ backgroundColor: 'red', color: 'white', padding: '10px', marginBottom: '20px', borderRadius: '5px' }}>
           🚨 CRITICAL: High Heart Rate Detected! Hardware Alarm is ON.
-          <button onClick={resetAlarm} style={{ marginLeft: '20px' }}>Reset Alarm (Send Command to Hardware)</button>
+          <button onClick={resetAlarm} style={{ marginLeft: '20px', padding: '5px 10px', cursor: 'pointer' }}>
+            Reset Alarm (Send Command to Hardware)
+          </button>
         </div>
       )}
 
       <h2>Live Vitals (From Hardware)</h2>
-      <table border="1" cellPadding="10">
-        <thead>
+      <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse' }}>
+        <thead style={{ backgroundColor: '#f2f2f2' }}>
           <tr>
             <th>Time</th>
             <th>Heart Rate (BPM)</th>
