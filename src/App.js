@@ -1,53 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-const API_BASE = 'https://water-backend-8md7.onrender.com';
-function App() {
-  const [readings, setReadings] = useState([]);
-  const [isAlertActive, setIsAlertActive] = useState(false);
+import './App.css';
 
+function App() {
+  const [vitals, setVitals] = useState([]);
+  const [isAlarmActive, setIsAlarmActive] = useState(false);
+
+  // Fetch data from Django every 2 seconds
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchVitals = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/api/water/latest/`);
-        setReadings(res.data);
-        if (res.data.length > 0) {
-          const latest = res.data[0];
-          if (latest.turbidity > 5 || latest.ph < 6.5 || latest.ph > 8.5) {
-            setIsAlertActive(true);
-          }
+        const response = await axios.get('http://localhost:8000/api/vitals/');
+        setVitals(response.data);
+        
+        // Check if the latest reading is critical
+        if (response.data.length > 0 && response.data[0].heartRate > 100) {
+          setIsAlarmActive(true);
         }
-      } catch (e) { console.error(e); }
+      } catch (error) {
+        console.error("Error fetching vitals:", error);
+      }
     };
-    fetchData();
-    const interval = setInterval(fetchData, 2000);
+
+    const interval = setInterval(fetchVitals, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  const dispatch = async () => {
-    await axios.post(`${API_BASE}/api/water/dispatch/`);
-    setIsAlertActive(false);
+  const resetAlarm = async () => {
+    await axios.post('http://localhost:8000/api/reset-alarm/');
+    setIsAlarmActive(false);
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: 'Arial' }}>
-      <h1>💧 Ethiopia Water Quality Monitor</h1>
-      {isAlertActive && (
-        <div style={{ background: 'red', color: '#fff', padding: 15, marginBottom: 20, borderRadius: 5 }}>
-          ⚠️ Water quality alert: turbidity or pH out of safe range!
-          <button onClick={dispatch} style={{ marginLeft: 20, padding: '8px 16px', cursor: 'pointer' }}>
-            Dispatch Maintenance
-          </button>
+    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
+      <h1>🏥 Smart Health Monitor</h1>
+      
+      {isAlarmActive && (
+        <div style={{ backgroundColor: 'red', color: 'white', padding: '10px', marginBottom: '20px' }}>
+          🚨 CRITICAL: High Heart Rate Detected! Hardware Alarm is ON.
+          <button onClick={resetAlarm} style={{ marginLeft: '20px' }}>Reset Alarm (Send Command to Hardware)</button>
         </div>
       )}
-      <h2>Live Readings</h2>
-      <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse' }}>
-        <thead><tr><th>Time</th><th>Turbidity (NTU)</th><th>pH</th></tr></thead>
+
+      <h2>Live Vitals (From Hardware)</h2>
+      <table border="1" cellPadding="10">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Heart Rate (BPM)</th>
+            <th>Temperature (°C)</th>
+          </tr>
+        </thead>
         <tbody>
-          {readings.map((r, i) => (
-            <tr key={i} style={{ background: r.turbidity > 5 || r.ph < 6.5 || r.ph > 8.5 ? '#ffcccc' : 'white' }}>
-              <td>{new Date(r.time).toLocaleTimeString()}</td>
-              <td>{r.turbidity}</td>
-              <td>{r.ph}</td>
+          {vitals.map((v, index) => (
+            <tr key={index} style={{ backgroundColor: v.heartRate > 100 ? '#ffcccc' : 'white' }}>
+              <td>{new Date(v.time).toLocaleTimeString()}</td>
+              <td>{v.heartRate}</td>
+              <td>{v.temperature}</td>
             </tr>
           ))}
         </tbody>
@@ -55,4 +64,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
